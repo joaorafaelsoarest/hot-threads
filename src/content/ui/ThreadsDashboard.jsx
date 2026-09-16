@@ -1,4 +1,20 @@
 import React from 'react';
+import { CONTROL_ATTRIBUTE, CONTROL_VARIANT_ATTRIBUTE, createReactIcon } from './visual-system.js';
+
+function controlProps(variant, state) {
+  return {
+    [CONTROL_ATTRIBUTE]: '',
+    [CONTROL_VARIANT_ATTRIBUTE]: variant,
+    ...(state ? { 'data-hot-threads-state': state } : {})
+  };
+}
+
+function iconLabel(iconName, label) {
+  return [
+    createReactIcon(React.createElement, iconName),
+    React.createElement('span', { 'data-hot-threads-label': '' }, label)
+  ];
+}
 
 function itemsFor(data, key) {
   const items = key === 'pinned'
@@ -33,6 +49,7 @@ function ThreadList({ items, emptyLabel, onOpenThread, onUnpinThread, showEmpty,
           React.createElement('button', {
             type: 'button',
             className: 'thread-link',
+            ...controlProps('text'),
             onClick: () => onOpenThread?.(item)
           }, itemTitle(item)),
           item?.stale === true && React.createElement(
@@ -49,11 +66,12 @@ function ThreadList({ items, emptyLabel, onOpenThread, onUnpinThread, showEmpty,
         showUnpin && React.createElement('button', {
           type: 'button',
           className: 'unpin-button',
+          ...controlProps('text'),
           title: `Desafixar ${itemTitle(item)}`,
           'aria-label': `Desafixar ${itemTitle(item)}`,
           disabled: unpinningIds?.has?.(item?.id),
           onClick: () => onUnpinThread?.(item)
-        }, 'Desafixar')
+        }, ...iconLabel('push-pin', 'Desafixar'))
       )
     ))
   );
@@ -86,7 +104,12 @@ export function ThreadsDashboard({
         React.createElement('p', { className: 'dashboard-kicker' }, 'Hot Threads'),
         React.createElement('h1', null, 'Threads')
       ),
-      React.createElement('button', { type: 'button', className: 'back-button', onClick: onBack }, 'Voltar')
+      React.createElement('button', {
+        type: 'button',
+        className: 'back-button',
+        ...controlProps('text'),
+        onClick: onBack
+      }, ...iconLabel('arrow-back', 'Voltar'))
     ),
     status === 'loading' && React.createElement(
       'p',
@@ -95,13 +118,18 @@ export function ThreadsDashboard({
     ),
     status === 'error' && React.createElement(
       'div',
-      { role: 'alert', 'aria-live': 'assertive', className: 'dashboard-error' },
+      { role: 'alert', 'aria-live': 'assertive', className: 'dashboard-error', 'data-hot-threads-state': 'error' },
       React.createElement('p', null, errorMessage || 'Não foi possível carregar o painel.'),
-      React.createElement('button', { type: 'button', className: 'retry-button', onClick: onRetry }, 'Tentar novamente')
+      React.createElement('button', {
+        type: 'button',
+        className: 'retry-button',
+        ...controlProps('text'),
+        onClick: onRetry
+      }, ...iconLabel('refresh', 'Tentar novamente'))
     ),
     actionError && React.createElement(
       'p',
-      { role: 'alert', 'aria-live': 'assertive', className: 'dashboard-error' },
+      { role: 'alert', 'aria-live': 'assertive', className: 'dashboard-error', 'data-hot-threads-state': 'error' },
       actionError
     ),
     status === 'ready' && !hasItems && React.createElement(

@@ -1,6 +1,10 @@
+import { configureControl, ensurePluginStyles, setIconLabelContent } from './ui/visual-system.js';
+
 const MENU_ATTRIBUTE = 'data-hot-threads-menu';
+const MENU_PLACEMENT_ATTRIBUTE = 'data-hot-threads-menu-placement';
 const SHORTCUTS_NAME = 'shortcuts';
 const STARRED_NAME = 'starred';
+const MENU_LABEL = 'Threads';
 
 function normalizedText(element) {
   return element?.textContent?.replace(/\s+/g, ' ').trim().toLowerCase() || '';
@@ -90,42 +94,27 @@ function removeElement(element) {
   else element?.parentElement?.removeChild?.(element);
 }
 
-function configureMenuButton(button) {
+function configureMenuButton(button, document) {
+  configureControl(button, 'menu-sidebar');
   if (button.getAttribute('type') !== 'button') button.setAttribute('type', 'button');
-  if (button.getAttribute('aria-label') !== '🔥 Threads') button.setAttribute('aria-label', '🔥 Threads');
+  if (button.getAttribute('aria-label') !== MENU_LABEL) button.setAttribute('aria-label', MENU_LABEL);
   if (!button.hasAttribute(MENU_ATTRIBUTE)) button.setAttribute(MENU_ATTRIBUTE, '');
-  if (button.textContent !== '🔥 Threads') button.textContent = '🔥 Threads';
+  if (button.getAttribute(MENU_PLACEMENT_ATTRIBUTE) !== 'sidebar') {
+    button.setAttribute(MENU_PLACEMENT_ATTRIBUTE, 'sidebar');
+  }
+  button.removeAttribute('style');
+  setIconLabelContent(document, button, { iconName: 'flame', label: MENU_LABEL });
+  ensurePluginStyles(document);
   return button;
 }
 
-function addFocusStyle(button) {
-  let priorFocusStyle = null;
-  button.addEventListener('focus', () => {
-    priorFocusStyle = {
-      outline: button.style.getPropertyValue('outline'),
-      outlineOffset: button.style.getPropertyValue('outline-offset')
-    };
-    button.style.setProperty('outline', '3px solid currentColor');
-    button.style.setProperty('outline-offset', '3px');
-  });
-  button.addEventListener('blur', () => {
-    if (!priorFocusStyle) return;
-    if (priorFocusStyle.outline) button.style.setProperty('outline', priorFocusStyle.outline);
-    else button.style.removeProperty('outline');
-    if (priorFocusStyle.outlineOffset) button.style.setProperty('outline-offset', priorFocusStyle.outlineOffset);
-    else button.style.removeProperty('outline-offset');
-    priorFocusStyle = null;
-  });
-}
-
 function createMenuButton(document) {
-  return configureMenuButton(document.createElement('button'));
+  return configureMenuButton(document.createElement('button'), document);
 }
 
 function attachMenuBehavior(button, onOpen) {
   const activate = () => onOpen?.(button);
   button.addEventListener('click', activate);
-  addFocusStyle(button);
 }
 
 export function createSidebarInjector({
@@ -140,7 +129,8 @@ export function createSidebarInjector({
 
   function reconcile() {
     const section = findShortcutsSection(document);
-    const menus = Array.from(document?.querySelectorAll?.(`[${MENU_ATTRIBUTE}]`) || []);
+    const menus = Array.from(document?.querySelectorAll?.(`[${MENU_ATTRIBUTE}]`) || [])
+      .filter((candidate) => candidate.getAttribute(MENU_PLACEMENT_ATTRIBUTE) !== 'header');
     if (!section) {
       menus.forEach(removeElement);
       return null;
@@ -148,7 +138,7 @@ export function createSidebarInjector({
 
     let button = menus.find((candidate) => candidate.tagName === 'BUTTON') || null;
     if (!button) button = createMenuButton(document);
-    configureMenuButton(button);
+    configureMenuButton(button, document);
     if (!enhancedButtons.has(button)) {
       attachMenuBehavior(button, onOpen);
       enhancedButtons.add(button);

@@ -2,6 +2,7 @@ import { observeThreadRoute } from './route-observer.js';
 import { findThreadHeader } from './dom-anchors.js';
 import { createPinButtonReconciler } from './pin-button.js';
 import { createHeaderInjector } from './header-injector.js';
+import { createSidebarInjector } from './sidebar-injector.js';
 import { createDashboardMount } from './dashboard-mount.js';
 import { SYNC_THREAD } from '../shared/protocol.js';
 
@@ -19,13 +20,18 @@ function titleForRoute(document, route) {
     `Thread ${route.threadId}`;
 }
 
-function createDomReconciler({ document, MutationObserver, header, dashboard }) {
+function createDomReconciler({ document, MutationObserver, header, sidebar, dashboard }) {
   let observer = null;
   let scheduled = false;
 
   function reconcile() {
     try {
       header.reconcile();
+    } catch {
+      // A page-owned DOM transition must not interrupt the content script.
+    }
+    try {
+      sidebar.reconcile();
     } catch {
       // A page-owned DOM transition must not interrupt the content script.
     }
@@ -86,7 +92,12 @@ export function startContentScript({
     MutationObserver: undefined,
     onOpen: (trigger) => dashboard.open({ trigger })
   });
-  const domReconciler = createDomReconciler({ document, MutationObserver, header, dashboard });
+  const sidebar = createSidebarInjector({
+    document,
+    MutationObserver: undefined,
+    onOpen: (trigger) => dashboard.open({ trigger })
+  });
+  const domReconciler = createDomReconciler({ document, MutationObserver, header, sidebar, dashboard });
   reconciler.start();
   domReconciler.start();
   const stopObserving = observeThreadRoute((route) => {
@@ -103,6 +114,7 @@ export function startContentScript({
     stopObserving();
     domReconciler.stop();
     header.stop();
+    sidebar.stop();
     dashboard.stop();
     reconciler.stop();
   };

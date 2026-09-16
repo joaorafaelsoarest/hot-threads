@@ -1,0 +1,198 @@
+:root,
+:host {
+  --ht-font-ui: var(--hot-threads-page-font-family, 'Google Sans Text', 'Google Sans', Roboto, Arial, sans-serif);
+  --ht-color-surface: var(--gm3-color-surface, #ffffff);
+  --ht-color-surface-container: var(--gm3-color-surface-container, #f0f4f9);
+  --ht-color-surface-container-low: var(--gm3-color-surface-container-low, #f8fafd);
+  --ht-color-surface-container-high: var(--gm3-color-surface-container-high, #e9eef6);
+  --ht-color-text: var(--gm3-color-on-surface, #1f1f1f);
+  --ht-color-text-variant: var(--gm3-color-on-surface-variant, #444746);
+  --ht-color-primary: var(--gm3-color-primary, #0b57d0);
+  --ht-color-secondary-container: var(--gm3-color-secondary-container, #c2e7ff);
+  --ht-color-on-secondary-container: var(--gm3-color-on-secondary-container, #001d35);
+  --ht-color-outline: var(--gm3-color-outline, #747775);
+  --ht-color-outline-variant: var(--gm3-color-outline-variant, #c4c7c5);
+  --ht-color-error: var(--gm3-color-error, #b3261e);
+  --ht-color-error-container: var(--gm3-color-error-container, #f9dedc);
+  --ht-color-on-error-container: var(--gm3-color-on-error-container, #410e0b);
+  --ht-radius-pill: 20px;
+  --ht-radius-card: 16px;
+  --ht-radius-control: 12px;
+  --ht-control-size: 40px;
+  --ht-icon-size: 20px;
+  --ht-transition-standard: 160ms cubic-bezier(0.2, 0, 0, 1);
+  --ht-focus-ring: var(--ht-color-primary);
+  --ht-color-state-hover: color-mix(in srgb, var(--ht-color-primary) 8%, transparent);
+  --ht-color-state-pressed: color-mix(in srgb, var(--ht-color-primary) 12%, transparent);
+  --ht-disabled-opacity: 0.38;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root,
+  :host {
+    --ht-color-surface: #202124;
+    --ht-color-surface-container: #2b2d30;
+    --ht-color-surface-container-low: #25272a;
+    --ht-color-surface-container-high: #303134;
+    --ht-color-text: #e8eaed;
+    --ht-color-text-variant: #bdc1c6;
+    --ht-color-primary: #a8c7fa;
+    --ht-color-secondary-container: #004a77;
+    --ht-color-on-secondary-container: #c2e7ff;
+    --ht-color-outline: #9aa0a6;
+    --ht-color-outline-variant: #5f6368;
+    --ht-color-error: #f2b8b5;
+    --ht-color-error-container: #8c1d18;
+    --ht-color-on-error-container: #f9dedc;
+  }
+}
+
+:root[data-theme='dark'],
+[data-theme='dark'] {
+  --ht-color-surface: #202124;
+  --ht-color-surface-container: #2b2d30;
+  --ht-color-surface-container-low: #25272a;
+  --ht-color-surface-container-high: #303134;
+  --ht-color-text: #e8eaed;
+  --ht-color-text-variant: #bdc1c6;
+  --ht-color-primary: #a8c7fa;
+  --ht-color-secondary-container: #004a77;
+  --ht-color-on-secondary-container: #c2e7ff;
+  --ht-color-outline: #9aa0a6;
+  --ht-color-outline-variant: #5f6368;
+  --ht-color-error: #f2b8b5;
+  --ht-color-error-container: #8c1d18;
+  --ht-color-on-error-container: #f9dedc;
+}
+
+:host-context([data-theme='dark']) {
+  --ht-color-surface: #202124;
+  --ht-color-surface-container: #2b2d30;
+  --ht-color-surface-container-low: #25272a;
+  --ht-color-surface-container-high: #303134;
+  --ht-color-text: #e8eaed;
+  --ht-color-text-variant: #bdc1c6;
+  --ht-color-primary: #a8c7fa;
+  --ht-color-secondary-container: #004a77;
+  --ht-color-on-secondary-container: #c2e7ff;
+  --ht-color-outline: #9aa0a6;
+  --ht-color-outline-variant: #5f6368;
+  --ht-color-error: #f2b8b5;
+  --ht-color-error-container: #8c1d18;
+  --ht-color-on-error-container: #f9dedc;
+}
+
+button[data-hot-threads-control] {
+  align-items: center;
+  appearance: none;
+  background: transparent;
+  border: 0;
+  border-radius: var(--ht-radius-pill);
+  box-shadow: none;
+  box-sizing: border-box;
+  color: var(--ht-color-text-variant);
+  cursor: pointer;
+  display: inline-flex;
+  flex: 0 0 auto;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 500;
+  gap: 8px;
+  justify-content: center;
+  line-height: 20px;
+  margin: 0;
+  min-height: var(--ht-control-size);
+  min-width: var(--ht-control-size);
+  padding: 0 12px;
+  position: relative;
+  text-decoration: none;
+  transition: background-color var(--ht-transition-standard), color var(--ht-transition-standard), opacity var(--ht-transition-standard);
+  user-select: none;
+  white-space: nowrap;
+}
+
+button[data-hot-threads-control] svg {
+  display: block;
+  flex: 0 0 var(--ht-icon-size);
+  height: var(--ht-icon-size);
+  width: var(--ht-icon-size);
+}
+
+button[data-hot-threads-control][data-hot-threads-variant='menu-header'],
+button[data-hot-threads-control][data-hot-threads-variant='menu-sidebar'] {
+  background: var(--ht-color-secondary-container);
+  color: var(--ht-color-on-secondary-container);
+}
+
+button[data-hot-threads-control][data-hot-threads-variant='menu-header'] {
+  margin-inline: 8px 12px;
+  padding-inline: 14px;
+}
+
+button[data-hot-threads-control][data-hot-threads-variant='menu-sidebar'] {
+  justify-content: flex-start;
+  margin-block: 4px;
+  padding-inline: 16px;
+  width: 100%;
+}
+
+button[data-hot-threads-control][data-hot-threads-variant='icon'] {
+  border-radius: 50%;
+  padding: 10px;
+}
+
+button[data-hot-threads-control][data-hot-threads-variant='text'] {
+  justify-content: flex-start;
+  padding-inline: 12px;
+}
+
+button[data-hot-threads-control]:hover {
+  background: var(--ht-color-state-hover);
+}
+
+button[data-hot-threads-control][data-hot-threads-variant='menu-header']:hover,
+button[data-hot-threads-control][data-hot-threads-variant='menu-sidebar']:hover {
+  background: color-mix(in srgb, var(--ht-color-secondary-container) 88%, var(--ht-color-primary) 12%);
+}
+
+button[data-hot-threads-control]:active,
+button[data-hot-threads-control][aria-pressed='true'] {
+  background: var(--ht-color-state-pressed);
+  color: var(--ht-color-on-secondary-container);
+}
+
+button[data-hot-threads-control][data-hot-threads-state='error'] {
+  background: var(--ht-color-error-container);
+  color: var(--ht-color-on-error-container);
+}
+
+button[data-hot-threads-control]:focus-visible {
+  outline: 2px solid var(--ht-focus-ring);
+  outline-offset: 2px;
+}
+
+button[data-hot-threads-control]:disabled,
+button[data-hot-threads-control][aria-disabled='true'] {
+  cursor: default;
+  opacity: var(--ht-disabled-opacity);
+  pointer-events: none;
+}
+
+@media (forced-colors: active) {
+  button[data-hot-threads-control] {
+    background: ButtonFace;
+    border: 1px solid ButtonText;
+    color: ButtonText;
+    forced-color-adjust: auto;
+  }
+
+  button[data-hot-threads-control]:focus-visible {
+    outline-color: Highlight;
+  }
+
+  button[data-hot-threads-control][aria-pressed='true'],
+  button[data-hot-threads-control][data-hot-threads-state='error'] {
+    background: Highlight;
+    color: HighlightText;
+  }
+}

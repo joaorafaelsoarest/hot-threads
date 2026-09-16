@@ -8,6 +8,8 @@ import { startContentScript } from '../../src/content/index.js';
 import { GET_DASHBOARD, OPEN_THREAD } from '../../src/shared/protocol.js';
 
 const styles = readFileSync(`${process.cwd()}/src/content/ui/styles.css`, 'utf8');
+const controlStyles = readFileSync(`${process.cwd()}/src/content/ui/controls.css`, 'utf8');
+const visualStyles = `${controlStyles}\n${styles}`;
 
 const flush = async () => {
   await Promise.resolve();
@@ -106,17 +108,17 @@ describe('semantic sidebar injector', () => {
     expect(button).not.toBeNull();
     expect(button.tagName).toBe('BUTTON');
     expect(button.type).toBe('button');
-    expect(button.getAttribute('aria-label')).toBe('🔥 Threads');
+    expect(button.getAttribute('aria-label')).toBe('Threads');
     expect(button.hasAttribute('data-hot-threads-menu')).toBe(true);
     expect(starred.nextElementSibling).toBe(button);
-    expect(button.textContent).toContain('🔥 Threads');
+    expect(button.textContent).toContain('Threads');
+    expect(button.querySelector('[data-hot-threads-icon="flame"]')).not.toBeNull();
+    expect(button.getAttribute('data-hot-threads-variant')).toBe('menu-sidebar');
 
     button.focus();
     expect(dom.window.document.activeElement).toBe(button);
-    expect(button.style.outline).toContain('solid');
-    expect(button.style.outlineOffset).toBe('3px');
+    expect(button.getAttribute('data-hot-threads-control')).not.toBeNull();
     button.blur();
-    expect(button.style.outline).toBe('');
     button.dispatchEvent(new dom.window.KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
     button.click();
     button.dispatchEvent(new dom.window.KeyboardEvent('keydown', { key: ' ', bubbles: true }));
@@ -153,9 +155,9 @@ describe('semantic sidebar injector', () => {
     const starred = document.querySelector('[role="button"]');
     const seeded = document.createElement('button');
     seeded.setAttribute('type', 'button');
-    seeded.setAttribute('aria-label', '🔥 Threads');
+    seeded.setAttribute('aria-label', 'Threads');
     seeded.setAttribute('data-hot-threads-menu', '');
-    seeded.textContent = '🔥 Threads';
+    seeded.textContent = 'Threads';
     starred.parentElement.append(seeded);
     const onOpen = vi.fn();
     const injector = createSidebarInjector({ document, MutationObserver: undefined, onOpen });
@@ -163,7 +165,7 @@ describe('semantic sidebar injector', () => {
     injector.reconcile();
     injector.reconcile();
     seeded.focus();
-    expect(seeded.style.outline).toContain('solid');
+    expect(seeded.getAttribute('data-hot-threads-control')).not.toBeNull();
     expect(seeded.tagName).toBe('BUTTON');
     seeded.dispatchEvent(new dom.window.KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
     seeded.click();
@@ -237,9 +239,9 @@ describe('semantic sidebar injector', () => {
   });
 
   it('keeps the dashboard font inherited while retaining a Google Sans/system fallback declaration', () => {
-    expect(styles).toMatch(/:host[\s\S]*font-family:\s*inherit/);
-    expect(styles).toContain("'Google Sans'");
-    expect(styles).toContain('Arial, sans-serif');
+    expect(visualStyles).toMatch(/:host[\s\S]*--ht-font-ui/);
+    expect(visualStyles).toContain("'Google Sans'");
+    expect(visualStyles).toContain('Arial, sans-serif');
   });
 });
 
@@ -297,7 +299,11 @@ describe('dashboard mount', () => {
     expect(host.shadowRoot.textContent).toContain('Em alta hoje');
     expect(host.shadowRoot.textContent).toContain('Pinned thread');
     expect(host.shadowRoot.textContent).toContain('Hot thread');
-    expect(host.shadowRoot.querySelector('button[type="button"]').textContent).toContain('Voltar');
+    const backButton = host.shadowRoot.querySelector('button[type="button"]');
+    expect(backButton.textContent).toContain('Voltar');
+    expect(backButton.getAttribute('data-hot-threads-control')).not.toBeNull();
+    expect(backButton.getAttribute('data-hot-threads-variant')).toBe('text');
+    expect(backButton.querySelector('[data-hot-threads-icon="arrow-back"]')).not.toBeNull();
 
     mount.open({ trigger: document.querySelector('[data-trigger]') });
     expect(document.querySelectorAll('[data-hot-threads-dashboard]')).toHaveLength(1);
@@ -328,6 +334,8 @@ describe('dashboard mount', () => {
     expect(shadow.querySelector('[role="alert"]').textContent).toContain('Dashboard unavailable');
     expect(shadow.querySelector('[role="alert"]').getAttribute('aria-live')).toBe('assertive');
     expect(shadow.querySelector('.retry-button').type).toBe('button');
+    expect(shadow.querySelector('.retry-button').getAttribute('data-hot-threads-control')).not.toBeNull();
+    expect(shadow.querySelector('.retry-button').querySelector('[data-hot-threads-icon="refresh"]')).not.toBeNull();
     expect(shadow.textContent).not.toContain('Nenhuma thread fixada.');
     expect(shadow.textContent).not.toContain('Nenhuma thread em alta hoje.');
 
@@ -443,6 +451,9 @@ describe('dashboard mount', () => {
     await flush();
     const menu = dom.window.document.querySelector('[data-hot-threads-menu]');
     expect(dom.window.document.querySelector('[data-hot-threads-pin]')).not.toBeNull();
+    expect(dom.window.document.querySelector('aside [data-hot-threads-menu]')).not.toBeNull();
+    expect(dom.window.document.querySelectorAll('[data-hot-threads-menu]')).toHaveLength(2);
+    expect(dom.window.document.querySelectorAll('[data-hot-threads-style]')).toHaveLength(1);
     menu.click();
     await flush();
 

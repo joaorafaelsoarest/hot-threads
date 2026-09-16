@@ -1,8 +1,8 @@
 :host {
-  color: inherit;
-  font-family: inherit;
+  background: var(--ht-color-surface);
+  color: var(--ht-color-text);
   color-scheme: inherit;
-  --hot-threads-font-fallback: 'Google Sans', 'Google Sans Text', Arial, sans-serif;
+  font-family: var(--ht-font-ui);
 }
 
 :host, * {
@@ -11,13 +11,13 @@
 
 .dashboard-shell {
   min-height: 100%;
-  color: CanvasText;
-  background: Canvas;
-  font-family: var(--hot-threads-page-font-family, var(--hot-threads-font-fallback));
-  font-size: inherit;
-  font-weight: inherit;
-  line-height: inherit;
-  padding: 32px clamp(20px, 5vw, 72px);
+  background: var(--ht-color-surface);
+  color: var(--ht-color-text);
+  font-family: var(--ht-font-ui);
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 20px;
+  padding: 24px clamp(20px, 5vw, 72px);
 }
 
 .dashboard-header {
@@ -25,49 +25,60 @@
   display: flex;
   gap: 24px;
   justify-content: space-between;
-  margin: 0 auto 28px;
+  margin: 0 auto 24px;
   max-width: 960px;
 }
 
 .dashboard-kicker {
-  color: currentColor;
-  font-size: 0.8rem;
+  color: var(--ht-color-text-variant);
+  font-size: 12px;
+  font-weight: 500;
   letter-spacing: 0.08em;
-  margin: 0 0 8px;
+  line-height: 16px;
+  margin: 0 0 4px;
   text-transform: uppercase;
 }
 
-h1, h2, p {
+.dashboard-shell h1,
+.dashboard-shell h2,
+.dashboard-shell p {
   margin-top: 0;
 }
 
-h1 {
-  font-size: clamp(2rem, 4vw, 3rem);
+.dashboard-shell h1 {
+  font-size: 28px;
+  font-weight: 400;
+  line-height: 36px;
   margin-bottom: 0;
 }
 
 .dashboard-sections {
   display: grid;
-  gap: 24px;
+  gap: 16px;
   grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
   margin: 0 auto;
   max-width: 960px;
 }
 
-section {
-  border: 1px solid currentColor;
-  border-radius: 18px;
+.dashboard-shell section {
+  background: var(--ht-color-surface-container-low);
+  border: 1px solid var(--ht-color-outline-variant);
+  border-radius: var(--ht-radius-card);
+  min-width: 0;
   padding: 20px;
 }
 
-h2 {
-  font-size: 1.1rem;
-  margin-bottom: 16px;
+.dashboard-shell h2 {
+  color: var(--ht-color-text);
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 24px;
+  margin-bottom: 12px;
 }
 
 .thread-list {
   display: grid;
-  gap: 8px;
+  gap: 4px;
   list-style: none;
   margin: 0;
   padding: 0;
@@ -75,68 +86,84 @@ h2 {
 
 .thread-row {
   align-items: center;
+  border-radius: var(--ht-radius-control);
   display: flex;
-  gap: 10px;
+  gap: 8px;
+  min-width: 0;
+}
+
+.thread-row:hover {
+  background: var(--ht-color-state-hover);
 }
 
 .thread-main {
   align-items: flex-start;
   display: grid;
   flex: 1;
-  gap: 4px;
+  gap: 2px;
   min-width: 0;
 }
 
-button {
-  appearance: none;
-  background: Canvas;
-  border: 1px solid currentColor;
-  border-radius: 999px;
-  color: currentColor;
-  cursor: pointer;
-  font: inherit;
-  padding: 10px 16px;
-}
-
-button:hover {
-  background: color-mix(in srgb, CanvasText 10%, Canvas);
-}
-
-button:focus-visible {
-  outline: 3px solid currentColor;
-  outline-offset: 3px;
-}
-
-.thread-link {
-  border-radius: 10px;
-  display: block;
+.dashboard-shell button[data-hot-threads-control].thread-link {
+  justify-content: flex-start;
+  min-width: 0;
+  overflow: hidden;
   text-align: left;
+  text-overflow: ellipsis;
   width: 100%;
 }
 
-.thread-meta, .stale-badge {
-  font-size: 0.85em;
+.thread-meta,
+.stale-badge {
+  color: var(--ht-color-text-variant);
+  font-size: 12px;
+  line-height: 18px;
 }
 
 .stale-badge {
-  font-weight: 600;
+  font-weight: 500;
 }
 
-.unpin-button {
+.dashboard-shell button[data-hot-threads-control].unpin-button {
   flex: 0 0 auto;
-  padding: 8px 12px;
 }
 
-.dashboard-status, .dashboard-error, .dashboard-empty {
-  margin: 0 auto 24px;
+.dashboard-status,
+.dashboard-error,
+.dashboard-empty {
+  margin: 0 auto 20px;
   max-width: 960px;
 }
 
+.dashboard-status,
+.dashboard-empty {
+  color: var(--ht-color-text-variant);
+}
+
 .dashboard-error {
-  border-left: 4px solid currentColor;
+  background: var(--ht-color-error-container);
+  border: 1px solid var(--ht-color-error);
+  border-radius: var(--ht-radius-control);
+  color: var(--ht-color-on-error-container);
   padding: 12px 16px;
 }
 
 .dashboard-error p {
   margin-bottom: 12px;
+}
+
+@media (max-width: 600px) {
+  .dashboard-shell {
+    padding-inline: 16px;
+  }
+
+  .dashboard-header {
+    align-items: stretch;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .dashboard-header .back-button {
+    align-self: flex-start;
+  }
 }
