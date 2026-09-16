@@ -1,0 +1,22 @@
+{
+  "manifest_version": 3,
+  "name": "Hot Threads",
+  "version": "0.1.0",
+  "permissions": ["storage", "scripting", "tabs"],
+  "host_permissions": ["*://chat.google.com/*", "*://mail.google.com/chat/*"],
+  "background": { "service_worker": "background.js", "type": "module" },
+  "content_scripts": [
+    {
+      "matches": ["*://chat.google.com/*", "*://mail.google.com/chat/*"],
+      "js": ["page-bridge.js"],
+      "run_at": "document_start",
+      "world": "MAIN"
+    },
+    {
+      "matches": ["*://chat.google.com/*", "*://mail.google.com/chat/*"],
+      "js": ["content.js"],
+      "run_at": "document_idle",
+      "world": "ISOLATED"
+    }
+  ]
+}

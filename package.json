@@ -1,0 +1,25 @@
+{
+  "name": "hot-threads",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "build": "npm run build:background && npm run build:content && npm run build:page-bridge && node scripts/verify-build.mjs",
+    "build:background": "vite build --config vite.background.config.js",
+    "build:content": "vite build --config vite.content.config.js",
+    "build:page-bridge": "vite build --mode page-bridge",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "dependencies": {
+    "dexie": "^4.0.8",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
+  "devDependencies": {
+    "fake-indexeddb": "^6.0.0",
+    "jsdom": "^30.0.1",
+    "vite": "^5.4.10",
+    "vitest": "^2.1.5"
+  }
+}
