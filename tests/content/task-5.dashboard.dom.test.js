@@ -63,6 +63,10 @@ describe('Task 5 dashboard data actions', () => {
     expect(shadow.textContent).toContain('Sem acesso há 14 dias');
     expect(shadow.querySelector('.unpin-button').textContent).toBe('Desafixar');
     expect(shadow.querySelector('.unpin-button').type).toBe('button');
+    expect(shadow.querySelector('.unpin-button').getAttribute('data-hot-threads-control')).not.toBeNull();
+    expect(shadow.querySelector('.unpin-button').getAttribute('data-hot-threads-variant')).toBe('text');
+    expect(shadow.querySelector('.unpin-button [data-hot-threads-icon="push-pin"]')).not.toBeNull();
+    expect(shadow.querySelector('.thread-link').getAttribute('data-hot-threads-control')).not.toBeNull();
 
     shadow.querySelector('.thread-link').click();
     shadow.querySelector('.unpin-button').click();

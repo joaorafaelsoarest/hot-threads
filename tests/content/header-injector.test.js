@@ -59,7 +59,13 @@ describe('Google Chat header injector', () => {
 
     expect(button).not.toBeNull();
     expect(button.tagName).toBe('BUTTON');
-    expect(button.getAttribute('aria-label')).toBe('🔥 Threads');
+    expect(button.getAttribute('aria-label')).toBe('Threads');
+    expect(button.hasAttribute('data-hot-threads-control')).toBe(true);
+    expect(button.getAttribute('data-hot-threads-variant')).toBe('menu-header');
+    expect(button.querySelector('[data-hot-threads-icon="flame"]')).not.toBeNull();
+    expect(button.querySelector('span').textContent).toBe('Threads');
+    expect(dom.window.getComputedStyle(button).borderRadius).toContain('--ht-radius-pill');
+    expect(dom.window.getComputedStyle(button).fontSize).toBe('14px');
     expect(button.parentElement).toBe(leftCluster);
     expect(button.previousElementSibling).toBe(logoCluster);
     expect(dom.window.document.querySelectorAll('[data-hot-threads-menu]')).toHaveLength(1);
@@ -87,6 +93,7 @@ describe('Google Chat header injector', () => {
     expect(dom.window.document.querySelector('[data-hot-threads-menu]')).toBe(first);
     expect(dom.window.document.querySelectorAll('[data-hot-threads-menu]')).toHaveLength(1);
     expect(first.parentElement).toBe(dom.window.document.querySelector('[data-left-cluster]'));
+    expect(first.getAttribute('aria-label')).toBe('Threads');
 
     injector.stop();
     dom.window.close();

@@ -1,5 +1,6 @@
 import { findThreadHeader } from './dom-anchors.js';
 import { GET_THREAD_STATE, TOGGLE_PIN } from '../shared/protocol.js';
+import { configureControl, createSvgIcon, ensurePluginStyles } from './ui/visual-system.js';
 
 const PIN_ATTRIBUTE = 'data-hot-threads-pin';
 
@@ -13,6 +14,7 @@ function applyPinState(button, isPinned) {
   if (button.getAttribute('title') !== label) button.setAttribute('title', label);
   if (button.getAttribute('aria-pressed') !== String(isPinned)) button.setAttribute('aria-pressed', String(isPinned));
   button.setAttribute('data-hot-threads-pin-state', isPinned ? 'pinned' : 'unpinned');
+  button.setAttribute('data-hot-threads-state', isPinned ? 'active' : 'default');
   const path = button.querySelector('path');
   if (path) {
     path.setAttribute('fill', isPinned ? 'currentColor' : 'none');
@@ -35,12 +37,14 @@ function setButtonStatus(button, label) {
     button.setAttribute('aria-pressed', 'false');
     button.setAttribute('data-hot-threads-pin-state', 'unpinned');
   }
+  button.setAttribute('data-hot-threads-state', 'loading');
   button.disabled = true;
   button.setAttribute('disabled', '');
   button.setAttribute('aria-busy', 'true');
 }
 
 function setTogglePending(button) {
+  button.setAttribute('data-hot-threads-state', 'pending');
   button.disabled = true;
   button.setAttribute('disabled', '');
   button.setAttribute('aria-busy', 'true');
@@ -61,21 +65,11 @@ function threadTitle(header, document, route) {
 function createButton(document, onToggle) {
   const button = document.createElementNS('http://www.w3.org/1999/xhtml', 'button');
   button.setAttribute(PIN_ATTRIBUTE, '');
-  button.setAttribute('type', 'button');
+  configureControl(button, 'icon');
+  ensurePluginStyles(document);
   button.setAttribute('fill', 'currentColor');
 
-  const icon = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-  icon.setAttribute('viewBox', '0 0 24 24');
-  icon.setAttribute('width', '20');
-  icon.setAttribute('height', '20');
-  icon.setAttribute('aria-hidden', 'true');
-  icon.setAttribute('fill', 'currentColor');
-  const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-  path.setAttribute('d', 'M8 3h8v6l2 3v2h-5v7l-1 1-1-1v-7H6v-2l2-3V3z');
-  path.setAttribute('fill', 'none');
-  path.setAttribute('stroke', 'currentColor');
-  path.setAttribute('stroke-width', '2');
-  icon.append(path);
+  const icon = createSvgIcon(document, 'push-pin');
   button.append(icon);
   button.addEventListener('click', onToggle);
   button.addEventListener('keydown', (event) => {
@@ -136,6 +130,7 @@ export function createPinButtonReconciler({
   function markError(button) {
     errorState = true;
     stateReady = false;
+    button.setAttribute('data-hot-threads-state', 'error');
     setRetryAction(button);
   }
 

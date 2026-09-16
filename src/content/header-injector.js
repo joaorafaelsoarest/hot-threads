@@ -1,6 +1,8 @@
+import { configureControl, ensurePluginStyles, setIconLabelContent } from './ui/visual-system.js';
+
 const MENU_ATTRIBUTE = 'data-hot-threads-menu';
 const MENU_PLACEMENT_ATTRIBUTE = 'data-hot-threads-menu-placement';
-const MENU_LABEL = '🔥 Threads';
+const MENU_LABEL = 'Threads';
 const SEARCH_SELECTOR = '#aso_search_form_anchor';
 
 function removeElement(element) {
@@ -49,64 +51,22 @@ function findHeaderInsertionTarget(document) {
   return null;
 }
 
-function configureMenuButton(button) {
+function configureMenuButton(button, document) {
+  configureControl(button, 'menu-header');
   if (button.getAttribute('type') !== 'button') button.setAttribute('type', 'button');
   if (button.getAttribute('aria-label') !== MENU_LABEL) button.setAttribute('aria-label', MENU_LABEL);
   if (!button.hasAttribute(MENU_ATTRIBUTE)) button.setAttribute(MENU_ATTRIBUTE, '');
   if (button.getAttribute(MENU_PLACEMENT_ATTRIBUTE) !== 'header') {
     button.setAttribute(MENU_PLACEMENT_ATTRIBUTE, 'header');
   }
-  if (button.textContent !== MENU_LABEL) button.textContent = MENU_LABEL;
-
-  const styles = {
-    alignItems: 'center',
-    backgroundColor: '#ffffff',
-    border: '1px solid #dadce0',
-    borderRadius: '20px',
-    boxSizing: 'border-box',
-    color: '#3c4043',
-    cursor: 'pointer',
-    display: 'flex',
-    flex: '0 0 auto',
-    fontFamily: 'Google Sans, Roboto, Arial, sans-serif',
-    fontSize: '14px',
-    fontWeight: '500',
-    height: '40px',
-    justifyContent: 'center',
-    lineHeight: '20px',
-    marginLeft: '12px',
-    marginRight: '8px',
-    minWidth: '108px',
-    padding: '0 14px',
-    whiteSpace: 'nowrap'
-  };
-  Object.entries(styles).forEach(([property, value]) => button.style.setProperty(property, value));
+  button.removeAttribute('style');
+  setIconLabelContent(document, button, { iconName: 'flame', label: MENU_LABEL });
+  ensurePluginStyles(document);
   return button;
-}
-
-function addFocusStyle(button) {
-  let priorFocusStyle = null;
-  button.addEventListener('focus', () => {
-    priorFocusStyle = {
-      outline: button.style.getPropertyValue('outline'),
-      outlineOffset: button.style.getPropertyValue('outline-offset')
-    };
-    button.style.setProperty('outline', '3px solid currentColor');
-    button.style.setProperty('outline-offset', '3px');
-  });
-  button.addEventListener('blur', () => {
-    if (!priorFocusStyle) return;
-    if (priorFocusStyle.outline) button.style.setProperty('outline', priorFocusStyle.outline);
-    else button.style.removeProperty('outline');
-    if (priorFocusStyle.outlineOffset) button.style.setProperty('outline-offset', priorFocusStyle.outlineOffset);
-    else button.style.removeProperty('outline-offset');
-    priorFocusStyle = null;
-  });
 }
 
 function attachMenuBehavior(button, onOpen) {
   button.addEventListener('click', () => onOpen?.(button));
-  addFocusStyle(button);
 }
 
 export function createHeaderInjector({
@@ -121,7 +81,8 @@ export function createHeaderInjector({
 
   function reconcile() {
     const target = findHeaderInsertionTarget(document);
-    const menus = Array.from(document?.querySelectorAll?.(`[${MENU_ATTRIBUTE}]`) || []);
+    const menus = Array.from(document?.querySelectorAll?.(`[${MENU_ATTRIBUTE}]`) || [])
+      .filter((candidate) => candidate.getAttribute(MENU_PLACEMENT_ATTRIBUTE) !== 'sidebar');
     if (!target) {
       menus.forEach(removeElement);
       return null;
@@ -131,7 +92,7 @@ export function createHeaderInjector({
     if (!button) button = menus.find((candidate) => candidate.tagName === 'BUTTON') || null;
     if (!button) button = document.createElement('button');
 
-    configureMenuButton(button);
+    configureMenuButton(button, document);
     if (!enhancedButtons.has(button)) {
       attachMenuBehavior(button, onOpen);
       enhancedButtons.add(button);

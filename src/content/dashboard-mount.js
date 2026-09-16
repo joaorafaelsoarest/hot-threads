@@ -3,7 +3,8 @@ import { createRoot } from 'react-dom/client';
 import { flushSync } from 'react-dom';
 import { GET_DASHBOARD, OPEN_THREAD, UNPIN_THREAD } from '../shared/protocol.js';
 import { ThreadsDashboard } from './ui/ThreadsDashboard.jsx';
-import styles from './ui/styles.css?inline';
+import dashboardStyles from './ui/styles.css?raw';
+import { VISUAL_SYSTEM_STYLES } from './ui/visual-system.js';
 import { findThreadHeader } from './dom-anchors.js';
 
 const HOST_ATTRIBUTE = 'data-hot-threads-dashboard';
@@ -204,7 +205,7 @@ export function createDashboardMount({
       mountPoint = document.createElement('div');
       mountPoint.setAttribute('data-hot-threads-dashboard-root', '');
       const style = document.createElement('style');
-      style.textContent = styles;
+      style.textContent = `${VISUAL_SYSTEM_STYLES}\n${dashboardStyles}`;
       shadowRoot.append(style, mountPoint);
       root = createRoot(mountPoint);
     }

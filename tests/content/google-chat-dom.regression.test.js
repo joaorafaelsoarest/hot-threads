@@ -103,7 +103,8 @@ describe('Google Chat DOM compatibility', () => {
     const logoCluster = dom.window.document.querySelector('.gb_3c');
 
     expect(menu).not.toBeNull();
-    expect(menu.getAttribute('aria-label')).toBe('🔥 Threads');
+    expect(menu.getAttribute('aria-label')).toBe('Threads');
+    expect(menu.querySelector('[data-hot-threads-icon="flame"]')).not.toBeNull();
     expect(menu.parentElement).toBe(logoCluster.parentElement);
     expect(menu.previousElementSibling).toBe(logoCluster);
     expect(starred.nextElementSibling).not.toBe(menu);
