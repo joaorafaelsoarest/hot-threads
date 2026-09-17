@@ -26,52 +26,57 @@ function compareTrending(left, right) {
     left.title.localeCompare(right.title);
 }
 
-export async function getDashboard(now = Date.now()) {
-  const [threads, logs] = await Promise.all([
-    db.threads.toArray(),
-    db.access_logs.toArray()
-  ]);
-  const latestAccess = latestAccessByThread(logs);
-  const staleCutoff = now - STALE_WINDOW_MS;
-  const trendingCutoff = now - TRENDING_WINDOW_MS;
-  const recentCounts = new Map();
-  const recentAccess = new Map();
+export function getDashboard(now = Date.now(), perf) {
+  const operation = async () => {
+    const [threads, logs] = await Promise.all([
+      db.threads.toArray(),
+      db.access_logs.toArray()
+    ]);
+    perf?.count('background.db.getDashboard.threadRowsRead', threads.length);
+    perf?.count('background.db.getDashboard.logRowsRead', logs.length);
+    const latestAccess = latestAccessByThread(logs);
+    const staleCutoff = now - STALE_WINDOW_MS;
+    const trendingCutoff = now - TRENDING_WINDOW_MS;
+    const recentCounts = new Map();
+    const recentAccess = new Map();
 
-  for (const log of logs) {
-    if (log.timestamp < trendingCutoff) continue;
-    recentCounts.set(log.threadId, (recentCounts.get(log.threadId) || 0) + 1);
-    const previous = recentAccess.get(log.threadId);
-    if (previous === undefined || log.timestamp > previous) {
-      recentAccess.set(log.threadId, log.timestamp);
+    for (const log of logs) {
+      if (log.timestamp < trendingCutoff) continue;
+      recentCounts.set(log.threadId, (recentCounts.get(log.threadId) || 0) + 1);
+      const previous = recentAccess.get(log.threadId);
+      if (previous === undefined || log.timestamp > previous) {
+        recentAccess.set(log.threadId, log.timestamp);
+      }
     }
-  }
 
-  const pinned = threads
-    .filter((thread) => thread.isPinned === true)
-    .sort(comparePinned)
-    .map((thread) => ({
-      id: thread.id,
-      title: thread.title,
-      url: thread.url,
-      isPinned: true,
-      pinnedAt: thread.pinnedAt,
-      stale: !logs.some((log) => log.threadId === thread.id && log.timestamp >= staleCutoff),
-      lastAccessAt: latestAccess.get(thread.id) ?? null
-    }));
+    const pinned = threads
+      .filter((thread) => thread.isPinned === true)
+      .sort(comparePinned)
+      .map((thread) => ({
+        id: thread.id,
+        title: thread.title,
+        url: thread.url,
+        isPinned: true,
+        pinnedAt: thread.pinnedAt,
+        stale: !logs.some((log) => log.threadId === thread.id && log.timestamp >= staleCutoff),
+        lastAccessAt: latestAccess.get(thread.id) ?? null
+      }));
 
-  const trending = threads
-    .filter((thread) => thread.isPinned !== true && recentCounts.has(thread.id))
-    .map((thread) => ({
-      id: thread.id,
-      title: thread.title,
-      url: thread.url,
-      accessCount: recentCounts.get(thread.id),
-      lastAccessAt: recentAccess.get(thread.id)
-    }))
-    .sort(compareTrending)
-    .slice(0, 5);
+    const trending = threads
+      .filter((thread) => thread.isPinned !== true && recentCounts.has(thread.id))
+      .map((thread) => ({
+        id: thread.id,
+        title: thread.title,
+        url: thread.url,
+        accessCount: recentCounts.get(thread.id),
+        lastAccessAt: recentAccess.get(thread.id)
+      }))
+      .sort(compareTrending)
+      .slice(0, 5);
 
-  return { pinned, trending };
+    return { pinned, trending };
+  };
+  return perf ? perf.measureAsync('background.db.getDashboard', operation) : operation();
 }
 
 export async function unpinThread(threadId) {

@@ -3,6 +3,7 @@ import { findThreadHeader } from './dom-anchors.js';
 import { createPinButtonReconciler } from './pin-button.js';
 import { createHeaderInjector } from './header-injector.js';
 import { createDashboardMount } from './dashboard-mount.js';
+import { createPerfProbe } from '../shared/perf-probe.js';
 import { SYNC_THREAD } from '../shared/protocol.js';
 
 function safeSendMessage(sendMessage, message) {
@@ -19,24 +20,33 @@ function titleForRoute(document, route) {
     `Thread ${route.threadId}`;
 }
 
-function createDomReconciler({ document, MutationObserver, header, dashboard }) {
+function createDomReconciler({ document, MutationObserver, header, dashboard, perf }) {
   let observer = null;
   let scheduled = false;
 
   function reconcile() {
-    try {
-      header.reconcile();
-    } catch {
-      // A page-owned DOM transition must not interrupt the content script.
-    }
-    try {
-      dashboard.reconcile();
-    } catch {
-      // A page-owned DOM transition must not interrupt the content script.
-    }
+    perf.measure('content.header.reconcile', () => {
+      try {
+        header.reconcile();
+      } catch {
+        // A page-owned DOM transition must not interrupt the content script.
+      }
+    });
+    perf.measure('content.dashboard.reconcile', () => {
+      try {
+        dashboard.reconcile();
+      } catch {
+        // A page-owned DOM transition must not interrupt the content script.
+      }
+    });
   }
 
-  function schedule() {
+  function schedule(records = []) {
+    const batches = perf.count('content.dom.mutationBatches');
+    perf.count('content.dom.mutationRecords', records.length);
+    if (batches >= 100) {
+      perf.flush({ surface: 'content', reason: 'dom-mutation-batches' });
+    }
     if (scheduled) return;
     scheduled = true;
     const queue = globalThis.queueMicrotask || ((callback) => Promise.resolve().then(callback));
@@ -73,30 +83,35 @@ export function startContentScript({
   window = globalThis.window,
   document = globalThis.document,
   sendMessage = (message) => globalThis.chrome?.runtime?.sendMessage(message),
-  MutationObserver = globalThis.MutationObserver
+  MutationObserver = globalThis.MutationObserver,
+  perf = createPerfProbe({ enabled: import.meta.env.VITE_HOT_THREADS_PERF === '1' })
 } = {}) {
   if (!window || !document) {
     return () => {};
   }
 
-  const reconciler = createPinButtonReconciler({ document, sendMessage, MutationObserver });
-  const dashboard = createDashboardMount({ document, sendMessage });
+  const instrumentedSendMessage = (message) =>
+    perf.measureAsync(`content.runtime.${message?.type || 'unknown'}`, () => sendMessage(message));
+  const reconciler = createPinButtonReconciler({ document, sendMessage: instrumentedSendMessage, MutationObserver, perf });
+  const dashboard = createDashboardMount({ document, sendMessage: instrumentedSendMessage, perf });
   const header = createHeaderInjector({
     document,
     MutationObserver: undefined,
     onOpen: (trigger) => dashboard.open({ trigger })
   });
-  const domReconciler = createDomReconciler({ document, MutationObserver, header, dashboard });
+  const domReconciler = createDomReconciler({ document, MutationObserver, header, dashboard, perf });
   reconciler.start();
   domReconciler.start();
   const stopObserving = observeThreadRoute((route) => {
+    perf.count('content.route.events');
     void reconciler.setRoute(route).catch(() => {});
     if (route) {
-      void safeSendMessage(sendMessage, {
+      void safeSendMessage(instrumentedSendMessage, {
         type: SYNC_THREAD,
         thread: { ...route, title: titleForRoute(document, route) }
       });
     }
+    perf.flush({ surface: 'content', reason: 'route' });
   }, { window });
 
   return () => {

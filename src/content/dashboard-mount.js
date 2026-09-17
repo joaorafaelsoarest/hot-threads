@@ -2,6 +2,7 @@ import React from 'react';
 import { createRoot } from 'react-dom/client';
 import { flushSync } from 'react-dom';
 import { GET_DASHBOARD, OPEN_THREAD, UNPIN_THREAD } from '../shared/protocol.js';
+import { createPerfProbe } from '../shared/perf-probe.js';
 import { ThreadsDashboard } from './ui/ThreadsDashboard.jsx';
 import styles from './ui/styles.css?inline';
 import { findThreadHeader } from './dom-anchors.js';
@@ -157,7 +158,8 @@ function threadUrl(item) {
 
 export function createDashboardMount({
   document = globalThis.document,
-  sendMessage = runtimeSendMessage
+  sendMessage = runtimeSendMessage,
+  perf = createPerfProbe()
 } = {}) {
   let host = null;
   let shadowRoot = null;
@@ -238,18 +240,20 @@ export function createDashboardMount({
 
   function render() {
     if (!root) return;
-    flushSync(() => {
-      root.render(React.createElement(ThreadsDashboard, {
-        status,
-        data,
-        errorMessage: loadError,
-        actionError,
-        unpinningIds,
-        onBack: close,
-        onRetry: loadDashboard,
-        onOpenThread: openThread,
-        onUnpinThread: unpinThread
-      }));
+    perf.measure('content.dashboard.render', () => {
+      flushSync(() => {
+        root.render(React.createElement(ThreadsDashboard, {
+          status,
+          data,
+          errorMessage: loadError,
+          actionError,
+          unpinningIds,
+          onBack: close,
+          onRetry: loadDashboard,
+          onOpenThread: openThread,
+          onUnpinThread: unpinThread
+        }));
+      });
     });
   }
 
@@ -316,18 +320,20 @@ export function createDashboardMount({
   }
 
   function open({ trigger } = {}) {
-    if (openState) {
-      reconcile();
+    return perf.measure('content.dashboard.open', () => {
+      if (openState) {
+        reconcile();
+        return host;
+      }
+      returnFocus = trigger || document?.activeElement || null;
+      openState = true;
+      const central = findCentralContent(document);
+      ensureHost(central);
+      hideCentral(central);
+      render();
+      void loadDashboard();
       return host;
-    }
-    returnFocus = trigger || document?.activeElement || null;
-    openState = true;
-    const central = findCentralContent(document);
-    ensureHost(central);
-    hideCentral(central);
-    render();
-    void loadDashboard();
-    return host;
+    });
   }
 
   function close({ restoreFocus = true } = {}) {

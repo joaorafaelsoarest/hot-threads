@@ -1,4 +1,5 @@
 import { findThreadHeader } from './dom-anchors.js';
+import { createPerfProbe } from '../shared/perf-probe.js';
 import { GET_THREAD_STATE, TOGGLE_PIN } from '../shared/protocol.js';
 
 const PIN_ATTRIBUTE = 'data-hot-threads-pin';
@@ -120,7 +121,8 @@ export function createPinButtonReconciler({
   document = globalThis.document,
   sendMessage = sendRuntimeMessage,
   MutationObserver = globalThis.MutationObserver,
-  queueMicrotask = globalThis.queueMicrotask
+  queueMicrotask = globalThis.queueMicrotask,
+  perf = createPerfProbe()
 } = {}) {
   let currentRoute = null;
   let observer = null;
@@ -224,7 +226,12 @@ export function createPinButtonReconciler({
     return button;
   }
 
-  function scheduleReconciliation() {
+  function scheduleReconciliation(records = []) {
+    const batches = perf.count('content.pin.mutationBatches');
+    perf.count('content.pin.mutationRecords', records.length);
+    if (batches >= 100) {
+      perf.flush({ surface: 'content', reason: 'pin-mutation-batches' });
+    }
     if (scheduled) return;
     if (errorState) return;
     if (stateReady) {
@@ -276,7 +283,7 @@ export function createPinButtonReconciler({
       return activeReconciliation;
     }
 
-    const running = performReconciliation(route);
+    const running = perf.measureAsync('content.pin.reconcile', () => performReconciliation(route));
     activeReconciliation = running;
     try {
       return await running;

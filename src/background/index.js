@@ -7,6 +7,7 @@ import {
 } from './db.js';
 import { getDashboard, unpinThread } from './dashboard-query.js';
 import { parseThreadUrl } from './route-parser.js';
+import { createPerfProbe } from '../shared/perf-probe.js';
 import {
   failure,
   GET_DASHBOARD,
@@ -17,6 +18,8 @@ import {
   TOGGLE_PIN,
   UNPIN_THREAD
 } from '../shared/protocol.js';
+
+const perf = createPerfProbe({ enabled: import.meta.env.VITE_HOT_THREADS_PERF === '1' });
 
 function hasValidSenderTab(sender) {
   return Number.isInteger(sender?.tab?.id) && sender.tab.id >= 0;
@@ -48,32 +51,40 @@ function parseValidThread(thread) {
 }
 
 async function trackThreadUrl(rawUrl, title) {
-  const route = parseThreadUrl(rawUrl);
-  if (!route) {
-    return null;
-  }
+  return perf.measureAsync('background.trackThreadUrl', async () => {
+    const route = parseThreadUrl(rawUrl);
+    if (!route) {
+      return null;
+    }
 
-  const thread = await upsertThread({
-    ...route,
-    title: title || `Thread ${route.threadId}`
+    const thread = await upsertThread({
+      ...route,
+      title: title || `Thread ${route.threadId}`
+    });
+    await recordAccess(thread, undefined, perf);
+    return thread;
   });
-  await recordAccess(thread);
-  return thread;
 }
 
 chrome.tabs.onUpdated.addListener((_tabId, changeInfo, tab) => {
-  return trackThreadUrl(changeInfo?.url || tab?.url, tab?.title).catch(() => {});
+  perf.count('background.tabs.onUpdated.callbacks');
+  Object.keys(changeInfo || {}).forEach((key) => perf.count(`background.tabs.onUpdated.change.${key}`));
+  return trackThreadUrl(changeInfo?.url || tab?.url, tab?.title)
+    .catch(() => {})
+    .finally(() => perf.flush({ surface: 'background', reason: 'tabs.onUpdated' }));
 });
 
 chrome.runtime.onInstalled.addListener(() => {
-  return cleanupExpiredLogs().catch(() => {});
+  return cleanupExpiredLogs(undefined, perf).catch(() => {});
 });
 chrome.runtime.onStartup.addListener(() => {
-  return cleanupExpiredLogs().catch(() => {});
+  return cleanupExpiredLogs(undefined, perf).catch(() => {});
 });
 
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-  void Promise.resolve()
+  const messageType = typeof message?.type === 'string' ? message.type : 'invalid';
+  perf.count(`background.runtime.messages.${messageType}`);
+  void perf.measureAsync(`background.runtime.${messageType}`, () => Promise.resolve()
     .then(async () => {
       if (!message || typeof message !== 'object') {
         return failure('INVALID_MESSAGE', 'Message must be an object');
@@ -102,8 +113,8 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         case GET_DASHBOARD: {
           const senderError = validateSenderTab(sender);
           if (senderError) return senderError;
-          await cleanupExpiredLogs();
-          return success(await getDashboard());
+          await cleanupExpiredLogs(undefined, perf);
+          return success(await getDashboard(undefined, perf));
         }
         case UNPIN_THREAD: {
           const senderError = validateSenderTab(sender);
@@ -139,7 +150,8 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       } catch {
         // Chrome may close the response channel before an asynchronous reply.
       }
-    });
+    })
+    .finally(() => perf.flush({ surface: 'background', reason: 'runtime-message' })));
 
   return true;
 });

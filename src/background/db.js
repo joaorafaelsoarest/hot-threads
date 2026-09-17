@@ -31,17 +31,26 @@ export async function togglePin(thread) {
   return updated;
 }
 
-export async function recordAccess(thread, now = Date.now()) {
-  await upsertThread(thread);
-  const latest = await db.access_logs.where('threadId').equals(thread.id).sortBy('timestamp').then((logs) => logs.at(-1));
-  if (!latest || now - latest.timestamp >= 30_000) {
-    await db.access_logs.add({ threadId: thread.id, timestamp: now });
-  }
+export function recordAccess(thread, now = Date.now(), perf) {
+  const operation = async () => {
+    await upsertThread(thread);
+    const logs = await db.access_logs.where('threadId').equals(thread.id).sortBy('timestamp');
+    perf?.count('background.db.recordAccess.logRowsRead', logs.length);
+    const latest = logs.at(-1);
+    if (!latest || now - latest.timestamp >= 30_000) {
+      await db.access_logs.add({ threadId: thread.id, timestamp: now });
+    }
+  };
+  return perf ? perf.measureAsync('background.db.recordAccess', operation) : operation();
 }
 
-export function cleanupExpiredLogs(now = Date.now()) {
+export function cleanupExpiredLogs(now = Date.now(), perf) {
   const cutoff = now - 30 * 24 * 60 * 60 * 1000;
-  return db.access_logs.toArray().then((logs) =>
-    db.access_logs.bulkDelete(logs.filter((log) => log.timestamp < cutoff).map((log) => log.id))
-  );
+  const operation = () => db.access_logs.toArray().then((logs) => {
+    const expiredIds = logs.filter((log) => log.timestamp < cutoff).map((log) => log.id);
+    perf?.count('background.db.cleanupExpiredLogs.rowsScanned', logs.length);
+    perf?.count('background.db.cleanupExpiredLogs.rowsDeleted', expiredIds.length);
+    return db.access_logs.bulkDelete(expiredIds);
+  });
+  return perf ? perf.measureAsync('background.db.cleanupExpiredLogs', operation) : operation();
 }
